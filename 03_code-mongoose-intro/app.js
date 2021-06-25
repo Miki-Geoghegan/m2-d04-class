@@ -28,7 +28,7 @@ mongoose.connect(`mongodb://localhost:27017/${DB_NAME}`, {useNewUrlParser: true,
 /* const Cat = mongoose.model('Cat', schema) */ // instead of this, we use:
 
 const Cat = mongoose.model( 
-    'Cat', // this (Cat) is the name for the collection
+    'Cat', // this (Cat) is the name for the collection. By default, mongodb will take the name, give it a lower-case and make it plural, this does NOT mean you should do it in JS
     {
       name: String,
       color: String,
@@ -36,11 +36,11 @@ const Cat = mongoose.model(
     } // these are mongoose classes from the library
   )
 
-  // strings in mongoose need to enter a database so mongoose creates a class (schema) for us
+// strings in mongoose need to enter a database so mongoose creates a class (schema) for us
 
-  // DEFINITION OF MODEL: the model is the class that we create to create a document (an entry in the database) with mongoose, to be used in a database
+// DEFINITION OF MODEL: the model is the class that we create to create a document (an entry in the database) with mongoose, to be used in a database
 
-  // to create the document we know we have to have a name, color and age as these were pre-defined above BUT we can add anything else that we like:
+// to create the document we know we have to have a name, color and age as these were pre-defined above BUT we can add anything else that we like:
 
   Cat.create({
     name: "Miki",
@@ -56,6 +56,68 @@ const Cat = mongoose.model(
 // essentially: the model is the MINIMUM structure that our documents will have
 // we are asked to send back a string, so an empty string is permitted BUT there is a way to prevent an empty string and require an answer
 
+// creating a dog
+const Dog = mongoose.model(
+    'Dog',
+    {
+      name: String,
+      color: String,
+      age: Number
+    } // These are NOT JS primitives, they are mongoose classes from the library
+  )
+
+// making the creation of a dog or cat a promise - saving them as promises:
+  const createCatPromise = Cat.create(
+    {
+      name: "Marco",
+      color: "carrot",
+      age: 3,
+      meowsLoudly: true,
+      sex: "M"
+    }
+  )
+  
+  const createDogPromise =  Dog.create(
+    {
+      name: "Fuffy",
+      color: "white",
+      age: 2,
+      barksLoudly: false,
+      sex: "M"
+    }
+  )
+
+  //if you have one than more operation, this is in place of the .then() or the .catch()
+  // this is called grouping promises, it will gather everything and console.log an array that is the join of cats and dogs:
+
+  Promise.all([createCatPromise, createDogPromise])
+  .then(catsAndDogsArray => console.log(catsAndDogsArray))
+  // you can also do this with find(), you can group them together
+
+
 
 // once a document is created, we can use mongoose sugar syntax to read from the database:
-Cat.find()
+
+Cat.find(
+    {
+        name: "Miki"
+    }
+)
+.then(cats => console.log('Cat.find() results', cats))
+.catch((err) => console.log('Cat.find() returned an error: ', err))
+
+// the above is used to search a database for a cat with name: Miki, this is asyncronous code so is a promise and can be .then()
+
+// Mongoose gives the option to create an event listener with the .on method, and then express a callback:
+mongoose.connection.on('connected', ()=> console.log('Mongoose connected (coming from the connection event listener)'))
+
+// closing the database is also important to prevent crashes:
+mongoose.connection.on('disconnected', () => console.log('Mongoose disconnected'));
+
+// this next part is listening to the node process, when it says the process is broken (SIGINT), it will disconnect from the database - add to every collection that you make (think of event listeners):
+process.on('SIGINT', () => {
+    mongoose.connection.close(() => {
+      console.log('Mongoose default connection disconnected through app termination');
+      process.exit(0);
+    });
+  });
